@@ -1,36 +1,33 @@
 const { isObject } = require('lodash');
 
-const ProxyFactory = (sourceObj) => {
-  const newObj = {
-    ...sourceObj,
-    __isChanged: false,
-  };
-
-  newObj.self = newObj;
+const ProxyFactory = (original) => {
+  let isChanged = false;
+  const copy = { ...original };
+  let traverser = copy;
 
   const handler = {
-    get: function(obj, prop) {
-      if (prop === '__target') {
-        return newObj.__isChanged ? newObj : sourceObj;
+    get: function(target, prop) {
+      if (prop === '__copy') {
+        return isChanged ? copy : original;
       }
 
-      if (isObject(obj[prop])) {
-        newObj.self[prop] = { ...obj[prop] };
+      if (isObject(target[prop])) {
+        traverser[prop] = { ...target[prop] };
 
-        newObj.self = newObj.self[prop];
+        traverser = traverser[prop];
 
-        return new Proxy(newObj.self, handler);
+        return new Proxy(traverser, handler);
       }
 
-      return obj[prop];
+      return target[prop];
     },
-    set: function(obj, prop, value) {
-      obj[prop] = value;
-      newObj.__isChanged = true;
+    set: function(target, prop, value) {
+      target[prop] = value;
+      isChanged = true;
     },
   };
 
-  return new Proxy(newObj, handler);
+  return new Proxy(copy, handler);
 };
 
 module.exports = { ProxyFactory };
