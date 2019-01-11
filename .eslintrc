@@ -1,0 +1,35 @@
+{
+  "settings": {
+    "ecmascript": 6
+  },
+  "env": {
+    "node": true,
+    "jest/globals": true
+  },
+  "plugins": ["jest"],
+  "extends": ["eslint:recommended", "plugin:node/recommended", "prettier"],
+  "rules": {
+    "arrow-body-style": "off",
+    "import/no-named-as-default": "off",
+    "no-console": "off",
+    "no-param-reassign": "warn",
+    "no-underscore-dangle": "off",
+    "no-var": "error",
+    "prefer-const": [
+      "error",
+      {
+        "destructuring": "any",
+        "ignoreReadBeforeAssign": false
+      }
+    ],
+    "prefer-destructuring": [
+      "warn",
+      {
+        "array": false,
+        "object": true
+      }
+    ],
+    "prefer-template": "warn",
+    "semi": ["error", "always"]
+  }
+}
