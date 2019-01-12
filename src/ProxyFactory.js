@@ -1,31 +1,117 @@
-const { isObject } = require('lodash');
+const { has, isArray, isObject } = require('lodash');
 
-const ProxyFactory = (original) => {
+const deepStripProxies = (target) => {
+  if (isObject(target)) {
+    if (target.__isProxy) {
+      const newTarget = target.__copy;
+
+      Object.entries(newTarget).forEach(([key, value]) => {
+        newTarget[key] = deepStripProxies(value);
+      });
+
+      return newTarget;
+    }
+  }
+
+  return target;
+};
+
+const ProxyFactory = (original, onChange = () => {}) => {
+  // console.log('');
+  // console.log(original);
+  let copy;
+  let handler;
   let isChanged = false;
-  const copy = { ...original };
-  let traverser = copy;
 
-  const handler = {
-    get: function(target, prop) {
-      if (prop === '__copy') {
-        return isChanged ? copy : original;
+  const handleChange = () => {
+    isChanged = true;
+    onChange();
+  };
+
+  const arrayHandler = {
+    get: function(target, key) {
+      if (key === '__copy') {
+        return isChanged ? deepStripProxies(copy) : original;
       }
 
-      if (isObject(target[prop])) {
-        traverser[prop] = { ...target[prop] };
-
-        traverser = traverser[prop];
-
-        return new Proxy(traverser, handler);
+      if (key === '__isChanged') {
+        return isChanged;
       }
 
-      return target[prop];
+      if (key === '__isProxy') {
+        return true;
+      }
+
+      if (has(target, key)) {
+        if (isObject(target[key])) {
+          copy[key] = ProxyFactory(copy[key], handleChange);
+
+          return copy[key];
+        }
+
+        return target[key];
+      }
+
+      return Reflect.get(target, key) || Reflect.get(Array.prototype, key);
     },
-    set: function(target, prop, value) {
-      target[prop] = value;
+    set: function(target, key, value) {
+      target[key] = value;
       isChanged = true;
+      onChange();
+
+      return true;
     },
   };
+
+  const objectHandler = {
+    deleteProperty: function(target, key) {
+      delete target[key];
+      isChanged = true;
+      onChange();
+    },
+    get: function(target, key) {
+      if (key === '__copy') {
+        return isChanged ? deepStripProxies(copy) : original;
+      }
+
+      if (key === '__isChanged') {
+        return isChanged;
+      }
+
+      if (key === '__isProxy') {
+        return true;
+      }
+
+      if (has(target, key)) {
+        if (isObject(target[key])) {
+          copy[key] = ProxyFactory(copy[key], handleChange);
+
+          return copy[key];
+        }
+
+        return target[key];
+      }
+
+      return Reflect.get(target, key) || Reflect.get(Array.prototype, key);
+    },
+    set: function(target, key, value) {
+      target[key] = value;
+      isChanged = true;
+      onChange();
+
+      return true;
+    },
+  };
+
+  if (isArray(original)) {
+    copy = [...original];
+    handler = arrayHandler;
+  } else if (isObject(original)) {
+    copy = { ...original };
+    handler = objectHandler;
+  }
+
+  // let traverser = copy;
 
   return new Proxy(copy, handler);
 };
