@@ -70,3 +70,42 @@ describe('Array', () => {
     });
   });
 });
+
+describe('Array of objects', () => {
+  let arr;
+  let p;
+
+  beforeEach(() => {
+    arr = [{ a: 1 }, { a: 2 }, { a: 3 }];
+
+    p = ProxyFactory(arr);
+  });
+
+  describe('mutate', () => {
+    describe('does not change original when', () => {
+      it('index is changed', () => {
+        p[1].a = 100;
+        expect(arr[1].a).toBe(2);
+      });
+
+      it('forEach() mutate', () => {
+        p.forEach((item) => item.a = 100);
+        expect(arr[1].a).toBe(2);
+      });
+    });
+
+    describe('changes new object', () => {
+      it('index is changed', () => {
+        p[1].a = 100;
+        expect(p[1].a).toBe(100);
+        expect(p.__copy[1].a).toBe(100);
+      });
+
+      it('forEach() mutate', () => {
+        p.forEach((item) => item.a = 100);
+        expect(p[1].a).toBe(100);
+        expect(p.__copy[1].a).toBe(100);
+      });
+    });
+  });
+});
