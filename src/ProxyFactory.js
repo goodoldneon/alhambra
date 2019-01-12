@@ -28,7 +28,47 @@ const ProxyFactory = (original, onChange = () => {}) => {
     onChange();
   };
 
+  const arrayHandler = {
+    get: function(target, key) {
+      if (key === '__copy') {
+        return isChanged ? deepStripProxies(copy) : original;
+      }
+
+      if (key === '__isChanged') {
+        return isChanged;
+      }
+
+      if (key === '__isProxy') {
+        return true;
+      }
+
+      if (has(target, key)) {
+        if (isObject(target[key])) {
+          copy[key] = ProxyFactory(copy[key], handleChange);
+
+          return copy[key];
+        }
+
+        return target[key];
+      }
+
+      return Reflect.get(target, key) || Reflect.get(Array.prototype, key);
+    },
+    set: function(target, key, value) {
+      target[key] = value;
+      isChanged = true;
+      onChange();
+
+      return true;
+    },
+  };
+
   const objectHandler = {
+    deleteProperty: function(target, key) {
+      delete target[key];
+      isChanged = true;
+      onChange();
+    },
     get: function(target, key) {
       if (key === '__copy') {
         return isChanged ? deepStripProxies(copy) : original;
@@ -64,8 +104,8 @@ const ProxyFactory = (original, onChange = () => {}) => {
   };
 
   if (isArray(original)) {
-    // copy = [...original];
-    // handler = arrayHandler;
+    copy = [...original];
+    handler = arrayHandler;
   } else if (isObject(original)) {
     copy = { ...original };
     handler = objectHandler;
