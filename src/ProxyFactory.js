@@ -1,31 +1,75 @@
-const { isObject } = require('lodash');
+const { has, isArray, isObject } = require('lodash');
 
 const ProxyFactory = (original) => {
+  let copy;
+  let handler;
   let isChanged = false;
-  const copy = { ...original };
-  let traverser = copy;
 
-  const handler = {
-    get: function(target, prop) {
-      if (prop === '__copy') {
+  const arrayHandler = {
+    get: function(target, key) {
+      if (key === '__copy') {
         return isChanged ? copy : original;
       }
 
-      if (isObject(target[prop])) {
-        traverser[prop] = { ...target[prop] };
+      if (has(target, key)) {
+        if (isObject(target[key])) {
+          traverser[key] = { ...target[key] };
 
-        traverser = traverser[prop];
+          traverser = traverser[key];
 
-        return new Proxy(traverser, handler);
+          return new Proxy(traverser, objectHandler);
+        }
+
+        return target[key];
       }
 
-      return target[prop];
+      return Reflect.get(target, key) || Reflect.get(Array.prototype, key);
     },
-    set: function(target, prop, value) {
-      target[prop] = value;
+    set: function(target, key, value) {
+      target[key] = value;
       isChanged = true;
+
+      return true;
     },
   };
+
+  const objectHandler = {
+    get: function(target, key) {
+      if (key === '__copy') {
+        return isChanged ? copy : original;
+      }
+
+      if (has(target, key)) {
+        if (isObject(target[key])) {
+          traverser[key] = { ...target[key] };
+
+          traverser = traverser[key];
+
+          return new Proxy(traverser, objectHandler);
+        }
+
+        return target[key];
+      }
+
+      return Reflect.get(target, key) || Reflect.get(Array.prototype, key);
+    },
+    set: function(target, key, value) {
+      target[key] = value;
+      isChanged = true;
+
+      return true;
+    },
+  };
+
+  if (isArray(original)) {
+    copy = [...original];
+    handler = arrayHandler;
+  } else if (isObject(original)) {
+    copy = { ...original };
+    handler = objectHandler;
+  }
+
+  let traverser = copy;
 
   return new Proxy(copy, handler);
 };
