@@ -107,11 +107,9 @@ const ProxyFactory = (original, onChange = () => {}) => {
     copy = [...original];
     handler = arrayHandler;
   } else if (isObject(original)) {
-    copy = { ...original };
+    copy = Object.assign(Object.create(Object.getPrototypeOf(original)), original);
     handler = objectHandler;
   }
-
-  // let traverser = copy;
 
   return new Proxy(copy, handler);
 };
