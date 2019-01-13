@@ -1,4 +1,4 @@
-# alhambraJS
+# Alhambra
 
 Protect data from mutation. Cheap clone instead.
 
