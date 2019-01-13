@@ -9,7 +9,7 @@ const { clone, has, isArray, isObject } = require('lodash');
 const deepStripProxies = (target) => {
   if (isObject(target)) {
     if (target.__isProxy) {
-      const newTarget = target.__copy;
+      const newTarget = target.__internal;
 
       Object.entries(newTarget).forEach(([key, value]) => {
         newTarget[key] = deepStripProxies(value);
@@ -30,8 +30,13 @@ const deepStripProxies = (target) => {
  * @param {Array|Object} [onChange] - Callback to parent to notify about a change. Used to tell root that one of its properties (any depth) changed.
  * @returns {Array|Object}
  */
-const ProxyFactory = (original, onChange = () => {}) => {
-  let copy;
+const ProxyFactory = ({
+  original,
+  onChange = () => {},
+  requestChange = null,
+  requestPropertyDelete,
+}) => {
+  let internal;
   let handler;
   let isChanged = false;
 
@@ -40,10 +45,30 @@ const ProxyFactory = (original, onChange = () => {}) => {
     onChange();
   };
 
+  const deleteObjectProperty = (obj, key, value) => {
+    if (requestPropertyDelete) {
+      requestPropertyDelete(obj, key, value);
+    } else {
+      obj[key] = value;
+    }
+
+    handleChange();
+  };
+
+  const updateObjectProperty = (obj, key, value) => {
+    if (requestChange) {
+      requestChange(obj, key, value);
+    } else {
+      obj[key] = value;
+    }
+
+    handleChange();
+  };
+
   const arrayHandler = {
     get: function(target, key) {
-      if (key === '__copy') {
-        return isChanged ? deepStripProxies(copy) : original;
+      if (key === '__internal') {
+        return isChanged ? deepStripProxies(internal) : original;
       }
 
       if (key === '__isChanged') {
@@ -56,9 +81,16 @@ const ProxyFactory = (original, onChange = () => {}) => {
 
       if (has(target, key)) {
         if (isObject(target[key])) {
-          copy[key] = ProxyFactory(copy[key], handleChange);
+          const performChange = (target, targetKey, value) => {
+            target[targetKey] = value;
+            updateObjectProperty(internal, key, target);
+          };
 
-          return copy[key];
+          return ProxyFactory({
+            original: internal[key],
+            onChange: handleChange,
+            requestChange: performChange,
+          });
         }
 
         return target[key];
@@ -67,9 +99,7 @@ const ProxyFactory = (original, onChange = () => {}) => {
       return Reflect.get(target, key) || Reflect.get(Array.prototype, key);
     },
     set: function(target, key, value) {
-      target[key] = value;
-      isChanged = true;
-      onChange();
+      updateObjectProperty(target, key, value);
 
       return true;
     },
@@ -77,13 +107,11 @@ const ProxyFactory = (original, onChange = () => {}) => {
 
   const objectHandler = {
     deleteProperty: function(target, key) {
-      delete target[key];
-      isChanged = true;
-      onChange();
+      deleteObjectProperty(target, key);
     },
     get: function(target, key) {
-      if (key === '__copy') {
-        return isChanged ? deepStripProxies(copy) : original;
+      if (key === '__internal') {
+        return isChanged ? deepStripProxies(internal) : original;
       }
 
       if (key === '__isChanged') {
@@ -96,9 +124,22 @@ const ProxyFactory = (original, onChange = () => {}) => {
 
       if (has(target, key)) {
         if (isObject(target[key])) {
-          copy[key] = ProxyFactory(copy[key], handleChange);
+          const performChange = (target, targetKey, value) => {
+            target[targetKey] = value;
+            updateObjectProperty(internal, key, target);
+          };
 
-          return copy[key];
+          const performPropertyDelete = (target, targetKey) => {
+            delete target[targetKey];
+            updateObjectProperty(internal, key, target);
+          };
+
+          return ProxyFactory({
+            original: internal[key],
+            onChange: handleChange,
+            requestChange: performChange,
+            requestPropertyDelete: performPropertyDelete,
+          });
         }
 
         return target[key];
@@ -107,25 +148,23 @@ const ProxyFactory = (original, onChange = () => {}) => {
       return Reflect.get(target, key) || Reflect.get(Object.prototype, key);
     },
     set: function(target, key, value) {
-      target[key] = value;
-      isChanged = true;
-      onChange();
+      updateObjectProperty(target, key, value);
 
       return true;
     },
   };
 
   if (isArray(original)) {
-    copy = clone(original);
+    internal = clone(original);
     handler = arrayHandler;
   } else if (isObject(original)) {
-    copy = clone(original);
+    internal = clone(original);
     handler = objectHandler;
   } else {
     return original; // Must be a primitive.
   }
 
-  return new Proxy(copy, handler);
+  return new Proxy(internal, handler);
 };
 
 module.exports = { ProxyFactory };

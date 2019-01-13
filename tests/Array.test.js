@@ -1,4 +1,7 @@
-const { ProxyFactory } = require('../src/ProxyFactory');
+const { protect, release, replaceChanged } = require('../src');
+// const { ProxyFactory } = require('../src/ProxyFactory');
+// const { replaceChanged } = require('../src/replaceChanged');
+// const { reverseProxyFactory } = require('../src/reverseProxyFactory');
 
 describe('Array', () => {
   let arr;
@@ -7,27 +10,38 @@ describe('Array', () => {
   beforeEach(() => {
     arr = [3, 2, 1];
 
-    p = ProxyFactory(arr);
+    p = protect(arr);
   });
 
   it('is not created when nothing is changed', () => {
-    expect(arr === p.__copy).toBe(true);
+    const reversed = release(p);
+
+    expect(arr === reversed).toBe(true);
   });
 
   describe('is created when', () => {
     it('index is changed', () => {
       p[2] = 100;
-      expect(arr === p.__copy).toBe(false);
+
+      const reversed = release(p);
+
+      expect(arr === reversed).toBe(false);
     });
 
     it('push', () => {
       p.push(100);
-      expect(arr === p.__copy).toBe(false);
+
+      const reversed = release(p);
+
+      expect(arr === reversed).toBe(false);
     });
 
     it('sort', () => {
       p.sort();
-      expect(arr === p.__copy).toBe(false);
+
+      const reversed = release(p);
+
+      expect(arr === reversed).toBe(false);
     });
   });
 
@@ -52,20 +66,29 @@ describe('Array', () => {
     describe('changes new object', () => {
       it('index is changed', () => {
         p[1] = 100;
+
+        const reversed = release(p);
+
         expect(p[1]).toBe(100);
-        expect(p.__copy[1]).toBe(100);
+        expect(reversed[1]).toBe(100);
       });
 
       it('push', () => {
         p.push(100);
+
+        const reversed = release(p);
+
         expect(p.length).toBe(4);
-        expect(p.__copy.length).toBe(4);
+        expect(reversed.length).toBe(4);
       });
 
       it('sort', () => {
         p.sort();
+
+        const reversed = release(p);
+
         expect(p[0]).toBe(1);
-        expect(p.__copy[0]).toBe(1);
+        expect(reversed[0]).toBe(1);
       });
     });
   });
@@ -78,7 +101,7 @@ describe('Array of objects', () => {
   beforeEach(() => {
     arr = [{ a: 1 }, { a: 2 }, { a: 3 }];
 
-    p = ProxyFactory(arr);
+    p = protect(arr);
   });
 
   describe('mutate', () => {
@@ -97,15 +120,31 @@ describe('Array of objects', () => {
     describe('changes new object', () => {
       it('index is changed', () => {
         p[1].a = 100;
+
+        const reversed = release(p);
+
         expect(p[1].a).toBe(100);
-        expect(p.__copy[1].a).toBe(100);
+        expect(reversed[1].a).toBe(100);
       });
 
       it('forEach() mutate', () => {
         p.forEach((item) => (item.a = 100));
+
+        const reversed = release(p);
+
         expect(p[1].a).toBe(100);
-        expect(p.__copy[1].a).toBe(100);
+        expect(reversed[1].a).toBe(100);
       });
+    });
+
+    it("doesn't change other item references", () => {
+      p[1].a = 100;
+
+      const reverse = release(p);
+
+      expect(reverse[0] === arr[0]).toBe(true);
+      expect(reverse[1] === arr[1]).toBe(false);
+      expect(reverse[2] === arr[2]).toBe(true);
     });
   });
 });

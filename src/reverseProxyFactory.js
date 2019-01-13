@@ -7,7 +7,7 @@ const reverseProxyFactory = (target) => {
     throw new TypeError("Cannot release something that wasn't protected first");
   }
 
-  return target.__copy;
+  return target.__internal;
 };
 
 module.exports = { reverseProxyFactory };
