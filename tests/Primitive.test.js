@@ -1,4 +1,5 @@
-const { ProxyFactory, reverseProxyFactory } = require('../src/ProxyFactory');
+const { ProxyFactory } = require('../src/ProxyFactory');
+const { reverseProxyFactory } = require('../src/reverseProxyFactory');
 
 it("Primitives don't need protection, but makes sure they don't error.", () => {
   const foo = 1;
@@ -15,11 +16,9 @@ it("null doesn't need protection, but makes sure it doesn't error.", () => {
   expect(reverse).toEqual(null);
 });
 
-
 it("undefined doesn't need protection, but makes sure it doesn't error.", () => {
-    const p = ProxyFactory(undefined);
-    const reverse = reverseProxyFactory(p);
-  
-    expect(reverse).toEqual(undefined);
-  });
-  
+  const p = ProxyFactory(undefined);
+  const reverse = reverseProxyFactory(p);
+
+  expect(reverse).toEqual(undefined);
+});
