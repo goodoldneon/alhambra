@@ -30,18 +30,32 @@ const deepStripProxies = (target) => {
  * @param {Array|Object} [onChange] - Callback to parent to notify about a change. Used to tell root that one of its properties (any depth) changed.
  * @returns {Array|Object}
  */
-const ProxyFactory = ({ original, onChange = () => {}, requestChange = null }) => {
+const ProxyFactory = ({
+  original,
+  onChange = () => {},
+  requestChange = null,
+  requestPropertyDelete,
+}) => {
   let internal;
   let handler;
   let isChanged = false;
 
   const handleChange = () => {
-    // console.log(internal);
     isChanged = true;
     onChange();
   };
 
-  const updateObject = (obj, key, value) => {
+  const deleteObjectProperty = (obj, key, value) => {
+    if (requestPropertyDelete) {
+      requestPropertyDelete(obj, key, value);
+    } else {
+      obj[key] = value;
+    }
+
+    handleChange();
+  };
+
+  const updateObjectProperty = (obj, key, value) => {
     if (requestChange) {
       requestChange(obj, key, value);
     } else {
@@ -69,8 +83,7 @@ const ProxyFactory = ({ original, onChange = () => {}, requestChange = null }) =
         if (isObject(target[key])) {
           const performChange = (target, targetKey, value) => {
             target[targetKey] = value;
-            updateObject(internal, key, target);
-            handleChange();
+            updateObjectProperty(internal, key, target);
           };
 
           return ProxyFactory({
@@ -86,7 +99,7 @@ const ProxyFactory = ({ original, onChange = () => {}, requestChange = null }) =
       return Reflect.get(target, key) || Reflect.get(Array.prototype, key);
     },
     set: function(target, key, value) {
-      updateObject(target, key, value);
+      updateObjectProperty(target, key, value);
 
       return true;
     },
@@ -94,12 +107,9 @@ const ProxyFactory = ({ original, onChange = () => {}, requestChange = null }) =
 
   const objectHandler = {
     deleteProperty: function(target, key) {
-      delete target[key];
-
-      handleChange();
+      deleteObjectProperty(target, key);
     },
     get: function(target, key) {
-      // console.log('\nget', target, key);
       if (key === '__internal') {
         return isChanged ? deepStripProxies(internal) : original;
       }
@@ -116,14 +126,19 @@ const ProxyFactory = ({ original, onChange = () => {}, requestChange = null }) =
         if (isObject(target[key])) {
           const performChange = (target, targetKey, value) => {
             target[targetKey] = value;
-            updateObject(internal, key, target);
-            handleChange();
+            updateObjectProperty(internal, key, target);
+          };
+
+          const performPropertyDelete = (target, targetKey) => {
+            delete target[targetKey];
+            updateObjectProperty(internal, key, target);
           };
 
           return ProxyFactory({
             original: internal[key],
             onChange: handleChange,
             requestChange: performChange,
+            requestPropertyDelete: performPropertyDelete,
           });
         }
 
@@ -133,7 +148,7 @@ const ProxyFactory = ({ original, onChange = () => {}, requestChange = null }) =
       return Reflect.get(target, key) || Reflect.get(Object.prototype, key);
     },
     set: function(target, key, value) {
-      updateObject(target, key, value);
+      updateObjectProperty(target, key, value);
 
       return true;
     },

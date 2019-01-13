@@ -20,8 +20,8 @@ delete p.foo.bar;
 
 // const reversed = release(p);
 
-// console.log('\n')
-// console.log(p.foo.bar);
+console.log('\n');
+console.log(p.foo);
 
 // expect(p.foo.bar.baz).toBe(undefined);
 // expect(reversed.foo.bar.baz).toBe(undefined);

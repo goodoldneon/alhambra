@@ -236,16 +236,16 @@ describe('mutate', () => {
         expect(reversed.id).toBe(2);
       });
 
-      // it('delete operator is used', () => {
-      //   delete p.foo.bar.baz;
+      it('delete operator is used', () => {
+        delete p.foo.bar.baz;
 
-      //   const reversed = release(p);
+        const reversed = release(p);
 
-      //   // console.log(p);
+        // console.log(p);
 
-      //   expect(p.foo.bar.baz).toBe(undefined);
-      //   expect(reversed.foo.bar.baz).toBe(undefined);
-      // });
+        expect(p.foo.bar.baz).toBe(undefined);
+        expect(reversed.foo.bar.baz).toBe(undefined);
+      });
     });
 
     describe('array', () => {
