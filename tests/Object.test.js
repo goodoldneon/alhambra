@@ -111,6 +111,8 @@ describe('is created when', () => {
       const p = protect(foo);
       const released = release(p);
 
+      expect(foo.func()).toEqual(p.func());
+      expect(foo.func()).toEqual(released.func());
       expect(foo.__proto__.func()).toEqual(p.__proto__.func());
       expect(foo.__proto__.func()).toEqual(released.__proto__.func());
     });
@@ -127,6 +129,8 @@ describe('is created when', () => {
       const p = protect(bar);
       const released = release(p);
 
+      expect(bar.func()).toEqual(p.func());
+      expect(bar.func()).toEqual(released.func());
       expect(bar.__proto__.__proto__.func()).toEqual(p.__proto__.__proto__.func());
       expect(bar.__proto__.__proto__.func()).toEqual(released.__proto__.__proto__.func());
     });

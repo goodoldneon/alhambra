@@ -192,6 +192,8 @@ describe('Array of objects', () => {
       const p = protect(arr);
       const released = release(p);
 
+      expect(arr[0].func()).toEqual(p[0].func());
+      expect(arr[0].func()).toEqual(released[0].func());
       expect(arr[0].__proto__.func()).toEqual(p[0].__proto__.func());
       expect(arr[0].__proto__.func()).toEqual(released[0].__proto__.func());
     });
@@ -208,6 +210,8 @@ describe('Array of objects', () => {
       const p = protect(arr);
       const released = release(p);
 
+      expect(arr[0].func()).toEqual(p[0].func());
+      expect(arr[0].func()).toEqual(released[0].func());
       expect(arr[0].__proto__.__proto__.func()).toEqual(p[0].__proto__.__proto__.func());
       expect(arr[0].__proto__.__proto__.func()).toEqual(released[0].__proto__.__proto__.func());
     });

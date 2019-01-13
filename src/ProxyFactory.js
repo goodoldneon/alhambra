@@ -30,7 +30,12 @@ const deepStripProxies = (target) => {
  * @param {Array|Object} [onChange] - Callback to parent to notify about a change. Used to tell root that one of its properties (any depth) changed.
  * @returns {Array|Object}
  */
-const ProxyFactory = ({ original, onChange = () => {}, requestSet = null, requestDelete }) => {
+const ProxyFactory = ({
+  original,
+  onChange = () => {},
+  requestSet = null,
+  requestDelete = null,
+}) => {
   let internal;
   let handler;
   let isChanged = false;
@@ -102,7 +107,7 @@ const ProxyFactory = ({ original, onChange = () => {}, requestSet = null, reques
         return target[key];
       }
 
-      return Reflect.get(target, key) || Reflect.get(Array.prototype, key);
+      return target[key];
     },
     set: function(target, key, value) {
       set(target, key, value);
@@ -153,7 +158,7 @@ const ProxyFactory = ({ original, onChange = () => {}, requestSet = null, reques
         return target[key];
       }
 
-      return Reflect.get(target, key) || Reflect.get(Object.prototype, key);
+      return target[key];
     },
     set: function(target, key, value) {
       set(target, key, value);
