@@ -2,7 +2,11 @@
 
 Protect data from mutation. Cheap clone instead.
 
+Alhambra creates a clone which can be mutated without affecting the original. The cloning occurs on-demand, rather than always deep-cloning.
+
 # Usage
+
+## Object
 
 Directly mutating an object's properties keeps the original unchanged.
 
@@ -31,31 +35,36 @@ const newObj = alhambra.release(p);
 console.log(obj === newObj); // True
 ```
 
-In arrays of objects, unchanged objects keep the same reference.
+Instantiation.
 
 ```js
-const alhambra = require('alhambra');
+const alhambra = require('../src');
 
-const obj = {
-  foo: {
-    bar: {
-      items: [{ a: 1 }, { a: 2 }, { a: 3 }],
-    },
-  },
-};
+class Foo {
+  constructor() {
+    this.id = 1;
+  }
 
+  greet() {
+    console.log('Hello!');
+  }
+}
+
+const obj = new Foo();
 const p = alhambra.protect(obj);
 
-p.foo.bar.items[1].a = 100;
+p.id = 2;
+p.greet(); // Still works.
 
-const reversed = alhambra.release(p);
+const newObj = alhambra.release(p);
 
-console.log(reversed.foo.bar.items[0] === obj.foo.bar.items[0]); // True
-console.log(reversed.foo.bar.items[1] === obj.foo.bar.items[1]); // False
-console.log(reversed.foo.bar.items[2] === obj.foo.bar.items[2]); // True
+console.log(obj.id === 1); // True
+console.log(newObj.id === 2); // True
 ```
 
-Arrays.
+## Array
+
+Array methods work.
 
 ```js
 const alhambra = require('alhambra');
@@ -93,34 +102,33 @@ console.log(obj.foo.bar.arr.length === 3); // True
 console.log(newObj.foo.bar.arr.length === 4); // True
 ```
 
-Instantiations.
+## Array of Objects
+
+In arrays of objects, unchanged objects keep the same reference.
 
 ```js
-const alhambra = require('../src');
+const alhambra = require('alhambra');
 
-class Foo {
-  constructor() {
-    this.id = 1;
-  }
+const obj = {
+  foo: {
+    bar: {
+      items: [{ a: 1 }, { a: 2 }, { a: 3 }],
+    },
+  },
+};
 
-  greet() {
-    console.log('Hello!');
-  }
-}
-
-const obj = new Foo();
 const p = alhambra.protect(obj);
 
-p.id = 2;
-p.greet(); // Still works.
+p.foo.bar.items[1].a = 100;
 
-const newObj = alhambra.release(p);
+const reversed = alhambra.release(p);
 
-console.log(obj.id === 1); // True
-console.log(newObj.id === 2); // True
+console.log(reversed.foo.bar.items[0] === obj.foo.bar.items[0]); // True
+console.log(reversed.foo.bar.items[1] === obj.foo.bar.items[1]); // False
+console.log(reversed.foo.bar.items[2] === obj.foo.bar.items[2]); // True
 ```
 
-## Caveats
+# Caveats
 
 Mutations to the source can still affect the new object. This is because the `protect()` method is designed to protect the source, rather than new object.
 
