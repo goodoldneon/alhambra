@@ -16,15 +16,12 @@ const obj = {
 
 const p = alhambra.protect(obj);
 
-// p.foo.bar.baz = 'bbb';
-// console.log(obj.foo.bar.baz, p.foo.bar.baz, p.__copy.foo.bar.baz);
-// p.metadata.name = 'bar';
-// delete p.metadata.name;
-// console.log(obj.metadata.name, p.metadata.name, p.__copy.metadata.name, obj === p.__copy);
-// p.id = 2;
-// console.log(obj.id, p.id, p.__copy.id);
-// p.items.push(100);
-// console.log(obj.items, p.items, p.__copy.items);
-p.items.push(100);
-console.log(obj.items, p.items, p.__copy.items);
-// console.log(obj.foo.bar.items, p.foo.bar.items, p.__copy.foo.bar.items);
+delete p.foo.bar;
+
+// const reversed = release(p);
+
+// console.log('\n')
+// console.log(p.foo.bar);
+
+// expect(p.foo.bar.baz).toBe(undefined);
+// expect(reversed.foo.bar.baz).toBe(undefined);

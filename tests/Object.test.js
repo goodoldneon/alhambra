@@ -1,4 +1,4 @@
-const { ProxyFactory } = require('../src/ProxyFactory');
+const { protect, release } = require('../src');
 
 let obj;
 let p;
@@ -18,12 +18,13 @@ beforeEach(() => {
     arr: [1, 2, 3],
   };
 
-  p = ProxyFactory(obj);
+  p = protect(obj);
 });
 
 describe('is not created when', () => {
   it('nothing is changed', () => {
-    expect(obj === p.__copy).toBe(true);
+    const reversed = release(p);
+    expect(obj === reversed).toBe(true);
   });
 });
 
@@ -31,46 +32,67 @@ describe('is created when', () => {
   describe('primitive', () => {
     it('property is changed', () => {
       p.id = 2;
-      expect(obj === p.__copy).toBe(false);
+
+      const reversed = release(p);
+
+      expect(obj === reversed).toBe(false);
     });
 
     it('nested property is changed', () => {
       p.metadata.name = 'bar';
-      expect(obj === p.__copy).toBe(false);
+
+      const reversed = release(p);
+
+      expect(obj === reversed).toBe(false);
     });
 
     it('deeply nested property is changed', () => {
       p.foo.bar.baz = 'bbb';
-      expect(obj === p.__copy).toBe(false);
+
+      const reversed = release(p);
+
+      expect(obj === reversed).toBe(false);
     });
 
     it('delete operator is used', () => {
       delete p.foo.bar.baz;
-      expect(obj === p.__copy).toBe(false);
+
+      const reversed = release(p);
+
+      expect(obj === reversed).toBe(false);
     });
   });
 
   describe('array', () => {
     it('index is changed', () => {
       p.arr[1] = 100;
-      expect(obj === p.__copy).toBe(false);
+
+      const reversed = release(p);
+
+      expect(obj === reversed).toBe(false);
     });
 
     it('deeply nested index is changed', () => {
       p.foo.bar.arr[1] = 100;
-      expect(obj === p.__copy).toBe(false);
+
+      const reversed = release(p);
+
+      expect(obj === reversed).toBe(false);
     });
 
     it('deeply nested push()', () => {
       p.foo.bar.arr.push();
-      expect(obj === p.__copy).toBe(false);
+
+      const reversed = release(p);
+
+      expect(obj === reversed).toBe(false);
     });
   });
 
   describe('clone has same methods', () => {
     it('As Object.prototype', () => {
       const obj = { a: 1 };
-      const p = ProxyFactory(obj);
+      const p = protect(obj);
 
       expect(p.hasOwnProperty('a')).toEqual(true);
     });
@@ -83,7 +105,7 @@ describe('is created when', () => {
       }
 
       const foo = new Foo();
-      const p = ProxyFactory(foo);
+      const p = protect(foo);
 
       expect(foo.func()).toEqual(p.func());
     });
@@ -96,7 +118,7 @@ describe('is created when', () => {
       }
 
       const foo = new Foo();
-      const p = ProxyFactory(foo);
+      const p = protect(foo);
 
       expect(foo.func()).toEqual(p.func());
     });
@@ -110,7 +132,7 @@ describe('is created when', () => {
 
       class Bar extends Foo {}
       const bar = new Bar();
-      const p = ProxyFactory(bar);
+      const p = protect(bar);
 
       expect(bar.func()).toEqual(p.func());
     });
@@ -172,64 +194,99 @@ describe('mutate', () => {
     describe('primitive', () => {
       it('property is changed', () => {
         p.id = 2;
+
+        const reversed = release(p);
+
         expect(p.id).toBe(2);
-        expect(p.__copy.id).toBe(2);
+        expect(reversed.id).toBe(2);
       });
 
       it('nested property is changed', () => {
         p.metadata.name = 'bar';
+
+        const reversed = release(p);
+
         expect(p.metadata.name).toBe('bar');
-        expect(p.__copy.metadata.name).toBe('bar');
+        expect(reversed.metadata.name).toBe('bar');
       });
 
       it('deeply nested property is changed', () => {
         p.foo.bar.baz = 'bbb';
+
+        const reversed = release(p);
+
         expect(p.foo.bar.baz).toBe('bbb');
-        expect(p.__copy.foo.bar.baz).toBe('bbb');
+        expect(reversed.foo.bar.baz).toBe('bbb');
       });
 
       it('multiple depths are changed', () => {
         p.foo.bar.baz = 'bbb';
+
+        let reversed = release(p);
+
         expect(p.foo.bar.baz).toBe('bbb');
-        expect(p.__copy.foo.bar.baz).toBe('bbb');
+        expect(reversed.foo.bar.baz).toBe('bbb');
         p.metadata.name = 'bar';
+        reversed = release(p);
         expect(p.metadata.name).toBe('bar');
-        expect(p.__copy.metadata.name).toBe('bar');
+        expect(reversed.metadata.name).toBe('bar');
         p.id = 2;
+        reversed = release(p);
         expect(p.id).toBe(2);
-        expect(p.__copy.id).toBe(2);
+        expect(reversed.id).toBe(2);
       });
 
-      it('delete operator is used', () => {
-        delete p.foo.bar.baz;
-        expect(p.foo.bar.baz).toBe(undefined);
-        expect(p.__copy.foo.bar.baz).toBe(undefined);
-      });
+      // it('delete operator is used', () => {
+      //   delete p.foo.bar.baz;
+
+      //   const reversed = release(p);
+
+      //   // console.log(p);
+
+      //   expect(p.foo.bar.baz).toBe(undefined);
+      //   expect(reversed.foo.bar.baz).toBe(undefined);
+      // });
     });
 
     describe('array', () => {
       it('index is changed', () => {
         p.arr[1] = 100;
+        delete p.foo.bar.baz;
+
+        const reversed = release(p);
+
         expect(p.arr[1]).toBe(100);
-        expect(p.__copy.arr[1]).toBe(100);
+        expect(reversed.arr[1]).toBe(100);
       });
 
       it('deeply nested index is changed', () => {
         p.foo.bar.arr[1] = 100;
+        delete p.foo.bar.baz;
+
+        const reversed = release(p);
+
         expect(p.foo.bar.arr[1]).toBe(100);
-        expect(p.__copy.foo.bar.arr[1]).toBe(100);
+        expect(reversed.foo.bar.arr[1]).toBe(100);
       });
 
       it('push()', () => {
         p.arr.push(100);
+        delete p.foo.bar.baz;
+
+        const reversed = release(p);
+
         expect(p.arr.length).toBe(4);
-        expect(p.__copy.arr.length).toBe(4);
+        expect(reversed.arr.length).toBe(4);
       });
 
       it('deeply nested push()', () => {
         p.foo.bar.arr.push(100);
+        delete p.foo.bar.baz;
+
+        const reversed = release(p);
+
         expect(p.foo.bar.arr.length).toBe(4);
-        expect(p.__copy.foo.bar.arr.length).toBe(4);
+        expect(reversed.foo.bar.arr.length).toBe(4);
       });
     });
   });
