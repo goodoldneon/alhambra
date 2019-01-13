@@ -30,12 +30,7 @@ const deepStripProxies = (target) => {
  * @param {Array|Object} [onChange] - Callback to parent to notify about a change. Used to tell root that one of its properties (any depth) changed.
  * @returns {Array|Object}
  */
-const ProxyFactory = ({
-  original,
-  onChange = () => {},
-  requestChange = null,
-  requestPropertyDelete,
-}) => {
+const ProxyFactory = ({ original, onChange = () => {}, requestSet = null, requestDelete }) => {
   let internal;
   let handler;
   let isChanged = false;
@@ -45,9 +40,9 @@ const ProxyFactory = ({
     onChange();
   };
 
-  const deleteObjectProperty = (obj, key, value) => {
-    if (requestPropertyDelete) {
-      requestPropertyDelete(obj, key, value);
+  const deleteProperty = (obj, key, value) => {
+    if (requestDelete) {
+      requestDelete(obj, key, value);
     } else {
       obj[key] = value;
     }
@@ -55,9 +50,9 @@ const ProxyFactory = ({
     handleChange();
   };
 
-  const updateObjectProperty = (obj, key, value) => {
-    if (requestChange) {
-      requestChange(obj, key, value);
+  const set = (obj, key, value) => {
+    if (requestSet) {
+      requestSet(obj, key, value);
     } else {
       obj[key] = value;
     }
@@ -66,6 +61,11 @@ const ProxyFactory = ({
   };
 
   const arrayHandler = {
+    deleteProperty: function(target, key) {
+      deleteProperty(target, key);
+
+      return true;
+    },
     get: function(target, key) {
       if (key === '__internal') {
         return isChanged ? deepStripProxies(internal) : original;
@@ -81,15 +81,21 @@ const ProxyFactory = ({
 
       if (has(target, key)) {
         if (isObject(target[key])) {
-          const performChange = (target, targetKey, value) => {
+          const performDelete = (target, targetKey) => {
+            delete target[targetKey];
+            set(internal, key, target);
+          };
+
+          const performSet = (target, targetKey, value) => {
             target[targetKey] = value;
-            updateObjectProperty(internal, key, target);
+            set(internal, key, target);
           };
 
           return ProxyFactory({
             original: internal[key],
             onChange: handleChange,
-            requestChange: performChange,
+            requestDelete: performDelete,
+            requestSet: performSet,
           });
         }
 
@@ -99,7 +105,7 @@ const ProxyFactory = ({
       return Reflect.get(target, key) || Reflect.get(Array.prototype, key);
     },
     set: function(target, key, value) {
-      updateObjectProperty(target, key, value);
+      set(target, key, value);
 
       return true;
     },
@@ -107,7 +113,7 @@ const ProxyFactory = ({
 
   const objectHandler = {
     deleteProperty: function(target, key) {
-      deleteObjectProperty(target, key);
+      deleteProperty(target, key);
 
       return true;
     },
@@ -126,21 +132,21 @@ const ProxyFactory = ({
 
       if (has(target, key)) {
         if (isObject(target[key])) {
-          const performChange = (target, targetKey, value) => {
-            target[targetKey] = value;
-            updateObjectProperty(internal, key, target);
+          const performDelete = (target, targetKey) => {
+            delete target[targetKey];
+            set(internal, key, target);
           };
 
-          const performPropertyDelete = (target, targetKey) => {
-            delete target[targetKey];
-            updateObjectProperty(internal, key, target);
+          const performSet = (target, targetKey, value) => {
+            target[targetKey] = value;
+            set(internal, key, target);
           };
 
           return ProxyFactory({
             original: internal[key],
             onChange: handleChange,
-            requestChange: performChange,
-            requestPropertyDelete: performPropertyDelete,
+            requestDelete: performDelete,
+            requestSet: performSet,
           });
         }
 
@@ -150,7 +156,7 @@ const ProxyFactory = ({
       return Reflect.get(target, key) || Reflect.get(Object.prototype, key);
     },
     set: function(target, key, value) {
-      updateObjectProperty(target, key, value);
+      set(target, key, value);
 
       return true;
     },

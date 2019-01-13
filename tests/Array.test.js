@@ -1,7 +1,4 @@
-const { protect, release, replaceChanged } = require('../src');
-// const { ProxyFactory } = require('../src/ProxyFactory');
-// const { replaceChanged } = require('../src/replaceChanged');
-// const { reverseProxyFactory } = require('../src/reverseProxyFactory');
+const { protect, release } = require('../src');
 
 describe('Array', () => {
   let arr;
@@ -38,6 +35,14 @@ describe('Array', () => {
 
     it('sort', () => {
       p.sort();
+
+      const reversed = release(p);
+
+      expect(arr === reversed).toBe(false);
+    });
+
+    it('delete operator is used', () => {
+      delete p[1];
 
       const reversed = release(p);
 
@@ -90,6 +95,15 @@ describe('Array', () => {
         expect(p[0]).toBe(1);
         expect(reversed[0]).toBe(1);
       });
+
+      it('delete operator is used', () => {
+        delete p[1];
+
+        const reversed = release(p);
+
+        expect(p[1]).toBe(undefined);
+        expect(reversed[1]).toBe(undefined);
+      });
     });
   });
 });
@@ -115,6 +129,11 @@ describe('Array of objects', () => {
         p.forEach((item) => (item.a = 100));
         expect(arr[1].a).toBe(2);
       });
+
+      it('delete operator is used', () => {
+        delete p[1].a;
+        expect(arr[1].a).toBe(2);
+      });
     });
 
     describe('changes new object', () => {
@@ -134,6 +153,15 @@ describe('Array of objects', () => {
 
         expect(p[1].a).toBe(100);
         expect(reversed[1].a).toBe(100);
+      });
+
+      it('delete operator is used', () => {
+        delete p[1].a;
+  
+        const reversed = release(p);
+
+        expect(p[1].a).toBe(undefined);
+        expect(reversed[1].a).toBe(undefined);
       });
     });
 

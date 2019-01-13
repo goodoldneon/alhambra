@@ -55,7 +55,7 @@ describe('is created when', () => {
       expect(obj === reversed).toBe(false);
     });
 
-    it('delete operator is used', () => {
+    it('deeply nested delete operator is used', () => {
       delete p.foo.bar.baz;
 
       const reversed = release(p);
@@ -167,7 +167,16 @@ describe('mutate', () => {
         expect(obj.id).toBe(1);
       });
 
-      it('delete operator is used', () => {
+      it('multiple depths are changed', () => {
+        p.id = 2;
+        expect(obj.id).toBe(1);
+        p.metadata.name = 'bar';
+        expect(obj.metadata.name).toBe('foo');
+        p.foo.bar.baz = 'bbb';
+        expect(obj.foo.bar.baz).toBe('aaa');
+      });
+
+      it('deeply nested delete operator is used', () => {
         delete p.foo.bar.baz;
         expect(obj.foo.bar.baz).toBe('aaa');
       });
