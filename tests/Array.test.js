@@ -89,7 +89,7 @@ describe('Array of objects', () => {
       });
 
       it('forEach() mutate', () => {
-        p.forEach((item) => item.a = 100);
+        p.forEach((item) => (item.a = 100));
         expect(arr[1].a).toBe(2);
       });
     });
@@ -102,7 +102,7 @@ describe('Array of objects', () => {
       });
 
       it('forEach() mutate', () => {
-        p.forEach((item) => item.a = 100);
+        p.forEach((item) => (item.a = 100));
         expect(p[1].a).toBe(100);
         expect(p.__copy[1].a).toBe(100);
       });

@@ -1,5 +1,11 @@
-const { has, isArray, isObject } = require('lodash');
+const { clone, has, isArray, isObject } = require('lodash');
 
+/**
+ * Recursively removes the Proxies.
+ *
+ * @param {Array|Object} target
+ * @returns {Array|Object}
+ */
 const deepStripProxies = (target) => {
   if (isObject(target)) {
     if (target.__isProxy) {
@@ -16,9 +22,15 @@ const deepStripProxies = (target) => {
   return target;
 };
 
+/**
+ * Wraps a Proxy around the input.
+ * Recursive.
+ *
+ * @param {Array|Object} target
+ * @param {Array|Object} [onChange] - Callback to parent to notify about a change. Used to tell root that one of its properties (any depth) changed.
+ * @returns {Array|Object}
+ */
 const ProxyFactory = (original, onChange = () => {}) => {
-  // console.log('');
-  // console.log(original);
   let copy;
   let handler;
   let isChanged = false;
@@ -92,7 +104,7 @@ const ProxyFactory = (original, onChange = () => {}) => {
         return target[key];
       }
 
-      return Reflect.get(target, key) || Reflect.get(Array.prototype, key);
+      return Reflect.get(target, key) || Reflect.get(Object.prototype, key);
     },
     set: function(target, key, value) {
       target[key] = value;
@@ -104,14 +116,28 @@ const ProxyFactory = (original, onChange = () => {}) => {
   };
 
   if (isArray(original)) {
-    copy = [...original];
+    copy = clone(original);
     handler = arrayHandler;
   } else if (isObject(original)) {
-    copy = Object.assign(Object.create(Object.getPrototypeOf(original)), original);
+    copy = clone(original);
     handler = objectHandler;
+  } else {
+    return original; // Must be a primitive.
   }
 
   return new Proxy(copy, handler);
 };
 
-module.exports = { ProxyFactory };
+const reverseProxyFactory = (target) => {
+  if (typeof target !== 'object' || target === null || target === undefined) {
+    return target;
+  }
+
+  if (!target.__isProxy) {
+    throw new TypeError("Cannot release something that wasn't protected first");
+  }
+
+  return target.__copy;
+};
+
+module.exports = { ProxyFactory, reverseProxyFactory };
