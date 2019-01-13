@@ -1,4 +1,4 @@
-const { protect, release } = require('../src');
+const { protect, release, replaceChanged } = require('../src');
 // const { ProxyFactory } = require('../src/ProxyFactory');
 // const { replaceChanged } = require('../src/replaceChanged');
 // const { reverseProxyFactory } = require('../src/reverseProxyFactory');
@@ -137,21 +137,14 @@ describe('Array of objects', () => {
       });
     });
 
-    // it("doesn't change other item references", () => {
-    //   p[1].a = 100;
+    it("doesn't change other item references", () => {
+      p[1].a = 100;
 
-    //   const reverse = release(p);
-    //   const replaced = replaceChanged(p, reverse);
+      const reverse = release(p);
 
-    //   expect(replaced[0] === arr[0]).toBe(true);
-    // });
+      expect(reverse[0] === arr[0]).toBe(true);
+      expect(reverse[1] === arr[1]).toBe(false);
+      expect(reverse[2] === arr[2]).toBe(true);
+    });
   });
-
-  // it('replaceChanged()', () => {
-  //   p[1].a = 2;
-  //   const reverse = release(p);
-  //   const replaced = replaceChanged(p, reverse);
-
-  //   expect(replaced[0] === arr[0]).toBe(true);
-  // });
 });

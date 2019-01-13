@@ -13,6 +13,7 @@ beforeEach(() => {
       bar: {
         baz: 'aaa',
         arr: [1, 2, 3],
+        objects: [{ a: 1 }, { a: 2 }, { a: 3 }],
       },
     },
     arr: [1, 2, 3],
@@ -241,8 +242,6 @@ describe('mutate', () => {
 
         const reversed = release(p);
 
-        // console.log(p);
-
         expect(p.foo.bar.baz).toBe(undefined);
         expect(reversed.foo.bar.baz).toBe(undefined);
       });
@@ -287,6 +286,16 @@ describe('mutate', () => {
 
         expect(p.foo.bar.arr.length).toBe(4);
         expect(reversed.foo.bar.arr.length).toBe(4);
+      });
+
+      it("deeply nested change doesn't change other item references", () => {
+        p.foo.bar.objects[1].a = 100;
+
+        const reverse = release(p);
+
+        expect(reverse.foo.bar.objects[0] === obj.foo.bar.objects[0]).toBe(true);
+        expect(reverse.foo.bar.objects[1] === obj.foo.bar.objects[1]).toBe(false);
+        expect(reverse.foo.bar.objects[2] === obj.foo.bar.objects[2]).toBe(true);
       });
     });
   });
