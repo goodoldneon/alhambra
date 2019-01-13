@@ -250,7 +250,6 @@ describe('mutate', () => {
     describe('array', () => {
       it('index is changed', () => {
         p.arr[1] = 100;
-        delete p.foo.bar.baz;
 
         const reversed = release(p);
 
@@ -260,7 +259,6 @@ describe('mutate', () => {
 
       it('deeply nested index is changed', () => {
         p.foo.bar.arr[1] = 100;
-        delete p.foo.bar.baz;
 
         const reversed = release(p);
 
@@ -270,7 +268,6 @@ describe('mutate', () => {
 
       it('push()', () => {
         p.arr.push(100);
-        delete p.foo.bar.baz;
 
         const reversed = release(p);
 
@@ -280,7 +277,6 @@ describe('mutate', () => {
 
       it('deeply nested push()', () => {
         p.foo.bar.arr.push(100);
-        delete p.foo.bar.baz;
 
         const reversed = release(p);
 

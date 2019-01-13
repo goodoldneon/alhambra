@@ -108,6 +108,8 @@ const ProxyFactory = ({
   const objectHandler = {
     deleteProperty: function(target, key) {
       deleteObjectProperty(target, key);
+
+      return true;
     },
     get: function(target, key) {
       if (key === '__internal') {
