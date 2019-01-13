@@ -6,6 +6,8 @@ Alhambra creates a clone which can be mutated without affecting the original. Th
 
 # Usage
 
+`npm install alhambra`
+
 ## Object
 
 Directly mutating an object's properties keeps the original unchanged.
