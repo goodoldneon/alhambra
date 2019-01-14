@@ -1,10 +1,11 @@
 const { clone, has, isObject } = require('lodash');
 
 /**
- * Recursively removes the Proxies.
+ * Removes the Proxies.
+ * Recursive.
  *
- * @param {Array|Object} target
- * @returns {Array|Object}
+ * @param {Array|Object} target - Proxy-wrapped object.
+ * @returns {Array|Object} - "target", but stripped of Proxy-wrapping.
  */
 const deepStripProxies = (target) => {
   if (isObject(target)) {
@@ -26,9 +27,11 @@ const deepStripProxies = (target) => {
  * Wraps a Proxy around the input.
  * Recursive.
  *
- * @param {Array|Object} target
- * @param {Array|Object} [onChange] - Callback to parent to notify about a change. Used to tell root that one of its properties (any depth) changed.
- * @returns {Array|Object}
+ * @param {Array|Object} original - What to wrap the Proxy around.
+ * @param {Array|Object} [onChange] - Callback to parent scope to notify about a change. Used to tell root that one of its properties (any depth) changed. Should only be used with recursion, and not passed in the original call.
+ * @param {Array|Object} [requestSet] - Callback to parent scope to set a property. Should only be used with recursion, and not passed in the original call.
+ * @param {Array|Object} [requestDelete] - Callback to parent scope to delete a property. Should only be used with recursion, and not passed in the original call.
+ * @returns {Array|Object} - Proxy-wrapped object. If "original" is not an object, then this is the same as "original".
  */
 const ProxyFactory = ({
   original,
