@@ -1,4 +1,4 @@
-const { clone, has, isArray, isObject } = require('lodash');
+const { clone, has, isObject } = require('lodash');
 
 /**
  * Recursively removes the Proxies.
@@ -37,7 +37,6 @@ const ProxyFactory = ({
   requestDelete = null,
 }) => {
   let internal;
-  let handler;
   let isChanged = false;
 
   const handleChange = () => {
@@ -65,7 +64,7 @@ const ProxyFactory = ({
     handleChange();
   };
 
-  const arrayHandler = {
+  const handler = {
     deleteProperty: function(target, key) {
       deleteProperty(target, key);
 
@@ -116,63 +115,8 @@ const ProxyFactory = ({
     },
   };
 
-  const objectHandler = {
-    deleteProperty: function(target, key) {
-      deleteProperty(target, key);
-
-      return true;
-    },
-    get: function(target, key) {
-      if (key === '__internal') {
-        return isChanged ? deepStripProxies(internal) : original;
-      }
-
-      if (key === '__isChanged') {
-        return isChanged;
-      }
-
-      if (key === '__isProxy') {
-        return true;
-      }
-
-      if (has(target, key)) {
-        if (isObject(target[key])) {
-          const performDelete = (target, targetKey) => {
-            delete target[targetKey];
-            set(internal, key, target);
-          };
-
-          const performSet = (target, targetKey, value) => {
-            target[targetKey] = value;
-            set(internal, key, target);
-          };
-
-          return ProxyFactory({
-            original: internal[key],
-            onChange: handleChange,
-            requestDelete: performDelete,
-            requestSet: performSet,
-          });
-        }
-
-        return target[key];
-      }
-
-      return target[key];
-    },
-    set: function(target, key, value) {
-      set(target, key, value);
-
-      return true;
-    },
-  };
-
-  if (isArray(original)) {
+  if (isObject(original)) {
     internal = clone(original);
-    handler = arrayHandler;
-  } else if (isObject(original)) {
-    internal = clone(original);
-    handler = objectHandler;
   } else {
     return original; // Must be a primitive.
   }
