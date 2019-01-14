@@ -1,7 +1,7 @@
-const { ProxyFactory } = require('./ProxyFactory');
+const { wrapWithProxy } = require('./ProxyFactory');
 const { reverseProxyFactory } = require('./reverseProxyFactory');
 
 module.exports = {
-  protect: (original) => ProxyFactory({ original }),
+  protect: (original) => wrapWithProxy({ original }),
   release: reverseProxyFactory,
 };

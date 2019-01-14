@@ -7,13 +7,13 @@ const { clone, has, isObject } = require('lodash');
  * @param {Array|Object} target - Proxy-wrapped object.
  * @returns {Array|Object} - "target", but stripped of Proxy-wrapping.
  */
-const deepStripProxies = (target) => {
+const deepStripProxy = (target) => {
   if (isObject(target)) {
     if (target.__isProxy) {
       const newTarget = target.__internal;
 
       Object.entries(newTarget).forEach(([key, value]) => {
-        newTarget[key] = deepStripProxies(value);
+        newTarget[key] = deepStripProxy(value);
       });
 
       return newTarget;
@@ -33,7 +33,7 @@ const deepStripProxies = (target) => {
  * @param {Array|Object} [requestDelete] - Callback to parent scope to delete a property. Should only be used with recursion, and not passed in the original call.
  * @returns {Array|Object} - Proxy-wrapped object. If "original" is not an object, then this is the same as "original".
  */
-const ProxyFactory = ({
+const wrapWithProxy = ({
   original,
   onChange = () => {},
   requestSet = null,
@@ -75,7 +75,7 @@ const ProxyFactory = ({
     },
     get: function(target, key) {
       if (key === '__internal') {
-        return isChanged ? deepStripProxies(internal) : original;
+        return isChanged ? deepStripProxy(internal) : original;
       }
 
       if (key === '__isChanged') {
@@ -98,7 +98,7 @@ const ProxyFactory = ({
             set(internal, key, target);
           };
 
-          return ProxyFactory({
+          return wrapWithProxy({
             original: internal[key],
             onChange: handleChange,
             requestDelete: performDelete,
@@ -127,4 +127,4 @@ const ProxyFactory = ({
   return new Proxy(internal, handler);
 };
 
-module.exports = { ProxyFactory };
+module.exports = { wrapWithProxy };
