@@ -227,10 +227,10 @@ describe('mutate', () => {
       });
 
       it('multiple depths are changed', () => {
+        let released;
+
         p.foo.bar.baz = 'bbb';
-
-        let released = release(p);
-
+        released = release(p);
         expect(p.foo.bar.baz).toBe('bbb');
         expect(released.foo.bar.baz).toBe('bbb');
         p.metadata.name = 'bar';
@@ -241,6 +241,23 @@ describe('mutate', () => {
         released = release(p);
         expect(p.id).toBe(2);
         expect(released.id).toBe(2);
+      });
+
+      it('multiple depths are changed', () => {
+        let released;
+
+        p.id = 2;
+        released = release(p);
+        expect(p.id).toBe(2);
+        expect(released.id).toBe(2);
+        p.metadata.name = 'bar';
+        released = release(p);
+        expect(p.metadata.name).toBe('bar');
+        expect(released.metadata.name).toBe('bar');
+        p.foo.bar.baz = 'bbb';
+        released = release(p);
+        expect(p.foo.bar.baz).toBe('bbb');
+        expect(released.foo.bar.baz).toBe('bbb');
       });
 
       it('delete operator is used', () => {

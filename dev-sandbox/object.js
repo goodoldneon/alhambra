@@ -1,25 +1,26 @@
 const alhambra = require('../src');
 
 const obj = {
+  id: 1,
+  metadata: {
+    name: 'aaa',
+  },
   foo: {
     bar: {
-      items: [{ a: 1 }, { a: 2 }, { a: 3 }],
+      baz: 'aaa',
+      arr: [1, 2, 3],
+      objects: [{ a: 1 }, { a: 2 }, { a: 3 }],
     },
   },
+  arr: [1, 2, 3],
 };
 
 const p = alhambra.protect(obj);
 
-p.foo.bar.items[1].a = 100;
+p.metadata.name = 'bbb';
 
-const reversed = alhambra.release(p);
+const r = alhambra.release(p);
 
-console.log(reversed.foo.bar.items[0] === obj.foo.bar.items[0]); // True
-console.log(reversed.foo.bar.items[1] === obj.foo.bar.items[1]); // False
-console.log(reversed.foo.bar.items[2] === obj.foo.bar.items[2]); // True
-
-// console.log('\n');
-// console.log(p.foo);
-
-// expect(p.foo.bar.baz).toBe(undefined);
-// expect(reversed.foo.bar.baz).toBe(undefined);
+console.log(obj.metadata.name);
+console.log(p.metadata.name);
+console.log(r.metadata.name);
