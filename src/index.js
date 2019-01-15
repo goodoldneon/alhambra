@@ -1,4 +1,5 @@
-const { removeProxy, wrapWithProxy } = require('./proxy');
+const { wrapWithProxy } = require('./proxy');
+const { removeProxy } = require('./removeProxy');
 
 module.exports = {
   protect: (original) => wrapWithProxy({ original }),

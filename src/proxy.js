@@ -1,48 +1,29 @@
-const { clone, has, isObject } = require('lodash');
+const clone = require('lodash/clone');
+const has = require('lodash/has');
+const isObject = require('lodash/isObject');
 
-/**
- * Removes the Proxies.
- * Recursive.
- *
- * @param {Array|Object} target - Proxy-wrapped object.
- * @returns {Array|Object} - "target", but stripped of Proxy-wrapping.
- */
-const deepStripProxy = (target) => {
-  if (isObject(target)) {
-    if (target.__isProxy) {
-      const newTarget = target.__internal;
-
-      Object.entries(newTarget).forEach(([key, value]) => {
-        newTarget[key] = deepStripProxy(value);
-      });
-
-      return newTarget;
-    }
-  }
-
-  return target;
-};
+const { deepStripProxy } = require('./deepStripProxy');
 
 class Handler {
   constructor({ original, requestDelete = null, requestSet = null, wrapWithProxy }) {
-    this.internal = null;
-    this.isChanged = false;
-    this.original = original;
-    this.requestDelete = requestDelete;
-    this.requestSet = requestSet;
-    this.wrapWithProxy = wrapWithProxy;
+    this._internal = null;
+    this._isChanged = false;
+    this._original = original;
+    this._requestDelete = requestDelete;
+    this._requestSet = requestSet;
+    this._wrapWithProxy = wrapWithProxy;
   }
 
   get(target, key) {
     /* Lazy clone original. */
-    if (!this.internal) this.internal = clone(this.original);
+    if (!this._internal) this._internal = clone(this._original);
 
     if (key === '__internal') {
-      return this.isChanged ? deepStripProxy(this.internal) : this.original;
+      return this._isChanged ? deepStripProxy(this._internal) : this._original;
     }
 
     if (key === '__isChanged') {
-      return this.isChanged;
+      return this._isChanged;
     }
 
     if (key === '__isProxy') {
@@ -55,25 +36,25 @@ class Handler {
           const newDeleteTarget = clone(deleteTarget);
 
           delete newDeleteTarget[targetKey];
-          this.handleSet(this.internal, key, newDeleteTarget);
+          this._handleSet(this._internal, key, newDeleteTarget);
         };
 
         const performSet = (setTarget, targetKey, value) => {
           const newSetTarget = clone(setTarget);
 
           newSetTarget[targetKey] = value;
-          this.handleSet(this.internal, key, newSetTarget);
+          this._handleSet(this._internal, key, newSetTarget);
         };
 
-        return this.wrapWithProxy({
-          original: this.internal[key],
+        return this._wrapWithProxy({
+          original: this._internal[key],
           onChange: this.notifyChange,
           requestDelete: performDelete,
           requestSet: performSet,
         });
       }
 
-      return this.internal[key];
+      return this._internal[key];
     }
 
     /* Should only be for prototype chain. */
@@ -82,41 +63,41 @@ class Handler {
 
   set(target, key, value) {
     /* Lazy clone original. */
-    if (!this.internal) this.internal = clone(this.original);
+    if (!this._internal) this._internal = clone(this._original);
 
-    this.handleSet(this.internal, key, value);
+    this._handleSet(this._internal, key, value);
 
     return true;
   }
 
   deleteProperty(target, key) {
-    this.handleDelete(target, key);
+    this._handleDelete(target, key);
 
     return true;
   }
 
-  handleSet(obj, key, value) {
-    if (this.requestSet) {
-      this.requestSet(obj, key, value);
+  _handleSet(obj, key, value) {
+    if (this._requestSet) {
+      this._requestSet(obj, key, value);
     } else {
       obj[key] = value;
     }
 
-    this.notifyChange();
+    this._notifyChange();
   }
 
-  handleDelete(obj, key, value) {
-    if (this.requestDelete) {
-      this.requestDelete(obj, key, value);
+  _handleDelete(obj, key, value) {
+    if (this._requestDelete) {
+      this._requestDelete(obj, key, value);
     } else {
       obj[key] = value;
     }
 
-    this.notifyChange();
+    this._notifyChange();
   }
 
-  notifyChange() {
-    this.isChanged = true;
+  _notifyChange() {
+    this._isChanged = true;
   }
 }
 
@@ -125,9 +106,9 @@ class Handler {
  * Recursive.
  *
  * @param {Array|Object} original - What to wrap the Proxy around.
- * @param {Array|Object} [onChange] - Callback to parent scope to notify about a change. Used to tell root that one of its properties (any depth) changed. Should only be used with recursion, and not passed in the original call.
- * @param {Array|Object} [requestSet] - Callback to parent scope to set a property. Should only be used with recursion, and not passed in the original call.
- * @param {Array|Object} [requestDelete] - Callback to parent scope to delete a property. Should only be used with recursion, and not passed in the original call.
+ * @param {Function} [requestSet] - Callback to parent scope to set a property. Should only be used with recursion, and not passed in the original call.
+ * @param {Function} [requestDelete] - Callback to parent scope to delete a property. Should only be used with recursion, and not passed in the original call.
+ * @param {Function} [wrapWithProxy] - For recursion.
  * @returns {Array|Object} - Proxy-wrapped object. If "original" is not an object, then this is the same as "original".
  */
 const wrapWithProxy = ({ original, requestDelete = null, requestSet = null }) => {
@@ -138,24 +119,12 @@ const wrapWithProxy = ({ original, requestDelete = null, requestSet = null }) =>
     wrapWithProxy,
   });
 
+  /* No need to wrap primitives. */
   if (!isObject(original)) {
-    return original; // Must be a primitive.
+    return original;
   }
 
-  // return new Proxy(internal, handler);
   return new Proxy(original, handler);
 };
 
-const removeProxy = (target) => {
-  if (typeof target !== 'object' || target === null || target === undefined) {
-    return target;
-  }
-
-  if (!target.__isProxy) {
-    throw new TypeError("Cannot release something that wasn't protected first");
-  }
-
-  return target.__internal;
-};
-
-module.exports = { removeProxy, wrapWithProxy };
+module.exports = { wrapWithProxy };
