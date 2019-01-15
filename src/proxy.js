@@ -15,19 +15,19 @@ class Handler {
   }
 
   get(target, key) {
-    /* Lazy clone original. */
-    if (!this._internal) this._internal = clone(this._original);
-
-    if (key === '__internal') {
-      return this._isChanged ? deepStripProxy(this._internal) : this._original;
-    }
-
     if (key === '__isChanged') {
       return this._isChanged;
     }
 
     if (key === '__isProxy') {
       return true;
+    }
+
+    /* Lazy clone original. */
+    if (!this._internal) this._internal = clone(this._original);
+
+    if (key === '__internal') {
+      return this._isChanged ? deepStripProxy(this._internal) : this._original;
     }
 
     if (has(target, key)) {
