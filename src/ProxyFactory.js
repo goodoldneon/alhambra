@@ -74,6 +74,9 @@ const wrapWithProxy = ({
       return true;
     },
     get: function(target, key) {
+      /* Lazy clone original. */
+      if (!internal) internal = clone(original);
+
       if (key === '__internal') {
         return isChanged ? deepStripProxy(internal) : original;
       }
@@ -88,14 +91,18 @@ const wrapWithProxy = ({
 
       if (has(target, key)) {
         if (isObject(target[key])) {
-          const performDelete = (target, targetKey) => {
-            delete target[targetKey];
-            set(internal, key, target);
+          const performDelete = (deleteTarget, targetKey) => {
+            const newDeleteTarget = clone(deleteTarget);
+
+            delete newDeleteTarget[targetKey];
+            set(internal, key, newDeleteTarget);
           };
 
-          const performSet = (target, targetKey, value) => {
-            target[targetKey] = value;
-            set(internal, key, target);
+          const performSet = (setTarget, targetKey, value) => {
+            const newSetTarget = clone(setTarget);
+
+            newSetTarget[targetKey] = value;
+            set(internal, key, newSetTarget);
           };
 
           return wrapWithProxy({
@@ -106,25 +113,30 @@ const wrapWithProxy = ({
           });
         }
 
-        return target[key];
+        return internal[key];
       }
 
+      /* Should only be for prototype chain. */
       return target[key];
     },
     set: function(target, key, value) {
-      set(target, key, value);
+      /* Lazy clone original. */
+      if (!internal) internal = clone(original);
+
+      set(internal, key, value);
 
       return true;
     },
   };
 
   if (isObject(original)) {
-    internal = clone(original);
+    // internal = clone(original);
   } else {
     return original; // Must be a primitive.
   }
 
-  return new Proxy(internal, handler);
+  // return new Proxy(internal, handler);
+  return new Proxy(original, handler);
 };
 
 module.exports = { wrapWithProxy };
