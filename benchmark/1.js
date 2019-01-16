@@ -2,70 +2,114 @@ const immutable = require('immutable');
 const _ = require('lodash');
 
 const alhambra = require('../src');
-const { protect } = require('../');
 const { runBenchmark } = require('./index');
 
-const arrLength = 10e5;
-const arr = Array(arrLength).fill({});
-let title;
-let job;
+const obj = { foo: { bar: { baz: {} } } };
+const arrLength = 10e4;
+const arr = Array(arrLength).fill(obj);
 
-title = `${arrLength} length array -- Iterate and assign`;
+runBenchmark(
+  () => {
+    arr.forEach((item) => {
+      immutable.fromJS(item);
+    });
+  },
+  {
+    ignoreFirstJobInRun: true,
+    runCount: 5,
+    title: `${arrLength} iterations -- immutable.fromJS()`,
+  },
+);
 
-job = () => {
-  arr.forEach((item) => {
-    const foo = item;
-  });
-};
+runBenchmark(
+  () => {
+    immutable.fromJS(arr);
+  },
+  {
+    ignoreFirstJobInRun: true,
+    runCount: 5,
+    title: `${arrLength} length array of objects into immutable.fromJS()`,
+  },
+);
 
-runBenchmark(job, { ignoreFirstJob: true, jobCountPerRun: 20, runCount: 1, title });
+runBenchmark(
+  () => {
+    arr.forEach((item) => {
+      _.cloneDeep(item);
+    });
+  },
+  {
+    ignoreFirstJobInRun: true,
+    runCount: 5,
+    title: `${arrLength} iterations -- _.cloneDeep()`,
+  },
+);
 
-title = `${arrLength} length array -- Iterate and spread`;
+runBenchmark(
+  () => {
+    arr.forEach((item) => {
+      alhambra.protect(item);
+    });
+  },
+  {
+    ignoreFirstJobInRun: true,
+    runCount: 5,
+    title: `${arrLength} iterations -- alhambra.protect()`,
+  },
+);
 
-job = () => {
-  arr.forEach((item) => {
-    const foo = { ...item };
-  });
-};
+runBenchmark(
+  () => {
+    const p = alhambra.protect(arr);
 
-runBenchmark(job, { ignoreFirstJob: true, jobCountPerRun: 20, runCount: 1, title });
+    p.forEach(() => {});
+  },
+  {
+    ignoreFirstJobInRun: true,
+    runCount: 5,
+    title: `${arrLength} iterations -- alhambra.protect().forEach()`,
+  },
+);
 
-title = `${arrLength} length array -- Iterate and Proxy`;
+runBenchmark(
+  () => {
+    const p = new Proxy(arr, { get() {} });
 
-job = () => {
-  arr.forEach((item) => {
-    const foo = new Proxy(item, () => {});
-  });
-};
+    arr.forEach((item, index) => {
+      _.clone(item);
+      p[index];
+    });
+  },
+  {
+    ignoreFirstJobInRun: true,
+    runCount: 5,
+    title: `${arrLength} iterations -- _.clone() and Proxy.get()`,
+  },
+);
 
-runBenchmark(job, { ignoreFirstJob: true, jobCountPerRun: 20, runCount: 1, title });
+runBenchmark(
+  () => {
+    const p = new Proxy(arr, { get() {} });
 
-// title = `${arrLength} length array -- Iterate and immutable.fromJS()`;
+    arr.forEach((item, index) => {
+      p[index];
+    });
+  },
+  { ignoreFirstJobInRun: true, runCount: 5, title: `${arrLength} iterations -- Proxy.get()` },
+);
 
-// job = () => {
-//   arr.forEach((item) => {
-//     const foo = immutable.fromJS(item);
-//   });
-// };
+runBenchmark(
+  () => {
+    arr.forEach((item) => {
+      new Proxy(arr, { get() {} });
+    });
+  },
+  { ignoreFirstJobInRun: true, runCount: 5, title: `${arrLength} iterations -- new Proxy()` },
+);
 
-// runBenchmark(job, { ignoreFirstJob: true, jobCountPerRun: 20, runCount: 1, title });
-
-// title = `${arrLength} length array -- Iterate and _.cloneDeep()`;
-
-// job = () => {
-//   arr.forEach((item) => {
-//     const foo = _.cloneDeep(item);
-//   });
-// };
-
-// runBenchmark(job, { ignoreFirstJob: true, jobCountPerRun: 20, runCount: 1, title });
-
-title = `${arrLength} length array -- Iterate and alhambra.protect()`;
-
-job = () => {
-  arr.forEach((item) => {
-    const foo = alhambra.protect(item);
-  });
-};
-
-runBenchmark(job, { ignoreFirstJob: true, jobCountPerRun: 20, runCount: 1, title });
+runBenchmark(
+  () => {
+    arr.forEach(() => {});
+  },
+  { ignoreFirstJobInRun: true, runCount: 5, title: `${arrLength} iterations` },
+);
