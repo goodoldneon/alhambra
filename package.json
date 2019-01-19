@@ -7,8 +7,8 @@
     "build": "rm -rf dist && babel src --out-dir dist --copy-files",
     "test": "jest tests -o --watch"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Aaron Harper",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/goodoldneon/alhambra"
