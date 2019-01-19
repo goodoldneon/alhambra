@@ -1,6 +1,6 @@
 {
   "name": "alhambra",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "",
   "main": "dist/main.js",
   "module": "src/index.js",

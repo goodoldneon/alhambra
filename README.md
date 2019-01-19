@@ -14,7 +14,7 @@ If you want to remove the Proxy wrappers from the protected object, use `alhambr
   - Creation cost does not increase as size increases.
 - Cons:
   - Interaction cost of the clone is more expensive than the original.
-  - Interaction cost increases as the nesting depth of properties increase. For example, getting `clone.foo` is more expensive than getting `clone.foo.bar`.
+  - Interaction cost increases as the nesting depth of properties increase. For example, getting `clone.foo.bar` is more expensive than getting `clone.foo`.
 
 ## Deep clone
 
