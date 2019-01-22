@@ -6,8 +6,9 @@ const { deepStripProxy } = require('./deepStripProxy');
 
 class Handler {
   constructor({ original, requestDelete = null, requestSet = null, wrapWithProxy }) {
-    this._internal = null;
+    this._internal = original;
     this._isChanged = false;
+    this._isCloned = false;
     this._original = original;
     this._requestDelete = requestDelete;
     this._requestSet = requestSet;
@@ -23,74 +24,65 @@ class Handler {
       return true;
     }
 
-    /* Lazy clone original. */
-    if (!this._internal) this._internal = clone(this._original);
-
     if (key === '__internal') {
       return this._isChanged ? deepStripProxy(this._internal) : this._original;
     }
 
-    if (has(target, key)) {
-      if (isObject(target[key])) {
-        const performDelete = (deleteTarget, targetKey) => {
-          const newDeleteTarget = clone(deleteTarget);
+    if (isObject(this._internal[key])) {
+      const performDelete = (deleteTarget, targetKey) => {
+        delete deleteTarget[targetKey];
+        this._handleSet(key, deleteTarget);
+      };
 
-          delete newDeleteTarget[targetKey];
-          this._handleSet(this._internal, key, newDeleteTarget);
-        };
+      const performSet = (setTarget, targetKey, value) => {
+        const newSetTarget = clone(setTarget);
 
-        const performSet = (setTarget, targetKey, value) => {
-          const newSetTarget = clone(setTarget);
+        newSetTarget[targetKey] = value;
+        this._handleSet(key, newSetTarget);
+      };
 
-          newSetTarget[targetKey] = value;
-          this._handleSet(this._internal, key, newSetTarget);
-        };
-
-        return this._wrapWithProxy({
-          original: this._internal[key],
-          onChange: this.notifyChange,
-          requestDelete: performDelete,
-          requestSet: performSet,
-        });
-      }
-
-      return this._internal[key];
+      return this._wrapWithProxy({
+        original: this._internal[key],
+        onChange: this.notifyChange,
+        requestDelete: performDelete,
+        requestSet: performSet,
+      });
     }
 
-    /* Should only be for prototype chain. */
-    return target[key];
+    return this._internal[key];
   }
 
   set(target, key, value) {
-    /* Lazy clone original. */
-    if (!this._internal) this._internal = clone(this._original);
-
-    this._handleSet(this._internal, key, value);
+    this._handleSet(key, value);
 
     return true;
   }
 
   deleteProperty(target, key) {
-    this._handleDelete(target, key);
+    this._handleDelete(key);
 
     return true;
   }
 
-  _handleSet(obj, key, value) {
+  _handleSet(key, value) {
+    if (!this._isCloned) this._cloneOriginal();
+
     if (this._requestSet) {
-      this._requestSet(obj, key, value);
+      this._requestSet(this._internal, key, value);
     } else {
-      obj[key] = value;
+      this._internal[key] = value;
     }
 
     this._notifyChange();
   }
 
-  _handleDelete(obj, key, value) {
+  _handleDelete(key) {
+    if (!this._isCloned) this._cloneOriginal();
+
     if (this._requestDelete) {
-      this._requestDelete(obj, key, value);
+      this._requestDelete(this._internal, key);
     } else {
-      obj[key] = value;
+      delete this._internal[key];
     }
 
     this._notifyChange();
@@ -98,6 +90,11 @@ class Handler {
 
   _notifyChange() {
     this._isChanged = true;
+  }
+
+  _cloneOriginal() {
+    this._internal = clone(this._original);
+    this._isCloned = true;
   }
 }
 
@@ -111,6 +108,7 @@ class Handler {
  * @param {Function} [wrapWithProxy] - For recursion.
  * @returns {Array|Object} - Proxy-wrapped object. If "original" is not an object, then this is the same as "original".
  */
+
 const wrapWithProxy = ({ original, requestDelete = null, requestSet = null }) => {
   const handler = new Handler({
     original,

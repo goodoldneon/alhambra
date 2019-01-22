@@ -1,27 +1,37 @@
 const Benchmark = require('benchmark');
+const immer = require('immer');
 const _ = require('lodash');
 const alhambra = require('../src/index');
 
 const suite = new Benchmark.Suite();
 const obj = { foo: { bar: { baz: {} } } };
-const dummyProxy = new Proxy(obj, {});
-const p = alhambra.protect(obj);
+
+/* Array of 1 million objects. */
+const arr = Array(10e5).fill(obj);
+
+const dummyProxy = new Proxy(arr, {});
+const p = alhambra.protect(arr);
 
 suite
   .add('original getter', function() {
-    obj.foo;
+    arr[0];
   })
   .add('protected getter', function() {
-    p.foo;
+    p[0];
   })
   .add('Proxy getter', function() {
-    dummyProxy.foo;
+    dummyProxy[0];
   })
   .add('original nested getter', function() {
-    obj.foo.bar.baz;
+    arr[0].foo.bar.baz;
   })
   .add('protected nested getter', function() {
-    p.foo.bar.baz;
+    p[0].foo.bar.baz;
+  })
+  .add('immer nested getter', function() {
+    immer.produce(arr, (draftState) => {
+      draftState[0].foo.bar.baz;
+    });
   })
   .on('cycle', function(event) {
     console.log(String(event.target));
@@ -29,9 +39,6 @@ suite
   .run();
 
 console.log('\n');
-
-/* Array of 1 million objects. */
-const arr = Array(10e5).fill(obj);
 
 (() => {
   const name = `cloneDeep() and iterate\n`;
@@ -66,6 +73,19 @@ const arr = Array(10e5).fill(obj);
 })();
 
 (() => {
+  const name = `immer.produce() and iterate\n`;
+  console.time(name);
+
+  immer.produce(arr, (draftState) => {
+    draftState.forEach((item) => {
+      item.foo;
+    });
+  });
+
+  console.timeEnd(name);
+})();
+
+(() => {
   const name = `cloneDeep() and one getter\n`;
   console.time(name);
 
@@ -91,6 +111,17 @@ const arr = Array(10e5).fill(obj);
 
   const protectedArr = alhambra.protect(arr);
   protectedArr[0].foo.bar;
+
+  console.timeEnd(name);
+})();
+
+(() => {
+  const name = `immer.produce() and one nested getter\n`;
+  console.time(name);
+
+  immer.produce(arr, (draftState) => {
+    draftState[0].foo.bar;
+  });
 
   console.timeEnd(name);
 })();
